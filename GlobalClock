@@ -2,19 +2,19 @@ using UnityEngine;
 using System.Collections;
 
 public class GlobalClock : MonoBehaviour {
-	// THIS CLASS HANDLES ALL TIME CALCULATIONS, ROTATES LIGHT SOURCES (SUNS AND MOONS), AND BLENDS SKYBOX TEXTURES
-	// REQUIRES THE SKYBOX BE A MATERIAL THAT HOLDS 2 SETS OF 6 TEXTURES (Up, North, South, East, West, Down) AND BLENDS BETWEEN THEM USING "_Blend"
-
-
+	/* THIS CLASS HANDLES ALL TIME CALCULATIONS, ROTATES LIGHT SOURCES (SUNS AND MOONS), AND BLENDS SKYBOX TEXTURES
+	 * REQUIRES THE SKYBOX BE A MATERIAL THAT HOLDS 2 SETS OF 6 TEXTURES (Up, North, South, East, West, Down) AND BLENDS BETWEEN THEM USING "_Blend"
+	 */
+	
 	/* TO DO/TO FIX:	
 	 * - not set skyboxtextures in every update (seems like a waste)
 	 * - making skybox material just hold all 4 sets of textures (ie learn shader code... ugh...)
 	 * - possibly merge/redistribute the LightToggle and CalculateAngle functions
 	 * - check the SkyboxBlending thresholds... think I saw something funny happening when playing with changeThreshold
 	 * - determine additional fog values and blend between them at appropriate times (density, type, etc)
+	 * - convert time in seconds into an HH:MM format (actual time)
 	 */
-
-
+	
 	// How long an in-game day lasts in minutes (and seconds)
 	public float fullCycleInMinutes = 1;
 	private float fullCycleInSeconds;
@@ -49,8 +49,7 @@ public class GlobalClock : MonoBehaviour {
 	public Texture2D[] morningSkyboxTextures = new Texture2D[6];
 	public Texture2D[] daySkyboxTextures = new Texture2D[6];
 	public Texture2D[] eveningSkyboxTextures = new Texture2D[6];
-
-
+	
 	// Arrays for light sources
 	public Transform[] suns = new Transform[1];
 	public Transform[] moons = new Transform[1];
