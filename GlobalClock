@@ -139,7 +139,7 @@ public class GlobalClock : MonoBehaviour {
 	}
 
 	void SkyboxBlending () {
-		// BLENDS BETWEEN TWO SETS OF SKYBOX TEXTURES DEPENDING ON THE 
+		// BLENDS BETWEEN TWO SETS OF SKYBOX TEXTURES DEPENDING ON THE TIME OF DAY WITHIN THE CHANGE THRESHOLD
 		float temp;
 		float changeThreshold = (360 * changePercent/100f)/2;
 
