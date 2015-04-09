@@ -75,8 +75,6 @@ public class LibraryManager : MonoBehaviour {
 		//Inserts a default library records for the given account ID into the libraries table
 		Debug.Log ("Creating new Library for Account ID >> " + acctID);
 
-		//Delete pre-existing entries if this acctID already exists in this table
-
 		//Create a connection to the database, open it, and create a command
 		IDbConnection dbCon = (IDbConnection) new SqliteConnection(dbPath);
 		dbCon.Open();
