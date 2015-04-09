@@ -8,13 +8,15 @@ public class GlobalClock : MonoBehaviour {
 	
 	/* TO DO/TO FIX:	
 	 * - not set skyboxtextures in every update (seems like a waste)
-	 * - making skybox material just hold all 4 sets of textures (ie learn shader code... ugh...)
+	 * - make a skybox material that just holds all 4 sets of textures (ie learn shader code... ugh...)
 	 * - possibly merge/redistribute the LightToggle and CalculateAngle functions
-	 * - check the SkyboxBlending thresholds... think I saw something funny happening when playing with changeThreshold
-	 * - determine additional fog values and blend between them at appropriate times (density, type, etc)
+	 * - handle Fog changes in a separate method... maybe
 	 * - convert time in seconds into an HH:MM format (actual time)
 	 */
-	
+
+	// As a percent, the time the clock starts at
+	public float startTimePercent = 0;
+
 	// How long an in-game day lasts in minutes (and seconds)
 	public float fullCycleInMinutes = 1;
 	private float fullCycleInSeconds;
@@ -23,10 +25,14 @@ public class GlobalClock : MonoBehaviour {
 	public float timeScale = 1;
 
 	// How much of the day is spent in light and darkness
-	public float dayPercent = 50;
+	public float dayLengthPercent = 50;
 
-	// The +/- threshold percentage before the skybox begins blending into/out of the morning/evening sets
+	// The threshold percentage before the skybox begins blending out of that time of day
 	public int changePercent = 10;
+	public int eveningChangePercent = 10;
+	public int morningChangePercent = 10;
+	public int dayChangePercent = 15;
+	public int nightChangePercent = 2;
 
 	// Constants and other boring things
 	private int dayCount = 0;
@@ -60,11 +66,26 @@ public class GlobalClock : MonoBehaviour {
 	public Color dayFogColor;
 	public Color eveningFogColor;
 
+	public float nightFogStartDistance;
+	public float nightFogEndDistance;
+
+	public float morningFogStartDistance;
+	public float morningFogEndDistance;
+
+	public float dayFogStartDistance;
+	public float dayFogEndDistance;
+
+	public float eveningFogStartDistance;
+	public float eveningFogEndDistance;
+
+
+
+
 	void Start () {
-		Mathf.Clamp (dayPercent, 10, 90);
+		Mathf.Clamp (dayLengthPercent, 10, 90);
 		Mathf.Clamp (changePercent, 1, 45);
 
-		currentTime = 0;
+		currentTime = (startTimePercent/100) * fullCycleInMinutes * MINUTE;
 	}
 
 	void Update () {
@@ -103,7 +124,7 @@ public class GlobalClock : MonoBehaviour {
 
 	void CalculateRotationAngle () {
 		// CALCULATES THE ANGLE OF THE SUN(S)/MOON(S)
-		float dayDuration = fullCycleInSeconds * (dayPercent/100);
+		float dayDuration = fullCycleInSeconds * (dayLengthPercent/100);
 		float nightDuration = fullCycleInSeconds - dayDuration;
 
 		float sunrise = nightDuration/2;
@@ -139,43 +160,55 @@ public class GlobalClock : MonoBehaviour {
 	}
 
 	void SkyboxBlending () {
-		// BLENDS BETWEEN TWO SETS OF SKYBOX TEXTURES DEPENDING ON THE TIME OF DAY WITHIN THE CHANGE THRESHOLD
+		// BLENDS BETWEEN TWO SETS OF SKYBOX TEXTURES DEPENDING ON THE 
 		float temp;
-		float changeThreshold = (360 * changePercent/100f)/2;
+		float changeThreshold = 180 * changePercent/100f;
+		float eveningChangeThreshold = 180 * eveningChangePercent/100f;
+		float morningChangeThreshold = 180 * morningChangePercent/100f;
+		float dayChangeThreshold = 180 * dayChangePercent/100f;
+		float nightChangeThreshold = 180 * nightChangePercent/100f;
 
 		// If it is during the transition from night to day
-		if (angle >= 90 - changeThreshold && angle <= 90 + changeThreshold) {
+		if (angle >= 90 - nightChangeThreshold && angle <= 90 + morningChangeThreshold) {
 			// If it is a night-to-morning angle
 			if (angle < 90) {
 				// Blend between night and morning variables
 				SetSkyboxTextures (nightSkyboxTextures, morningSkyboxTextures);
-				temp = 1 - Mathf.Abs(90 - angle) / changeThreshold;
+				temp = 1 - Mathf.Abs(90 - angle) / nightChangeThreshold;
 				RenderSettings.fogColor = Color.Lerp (nightFogColor, morningFogColor, temp);
+				RenderSettings.fogStartDistance = Mathf.Lerp (nightFogStartDistance, morningFogStartDistance, temp);
+				RenderSettings.fogEndDistance = Mathf.Lerp (nightFogEndDistance, morningFogEndDistance, temp);
 			}
 			// Otherwise is it a morning-to-day angle
 			else {
 				// Blend between morning and day variables
 				SetSkyboxTextures (morningSkyboxTextures, daySkyboxTextures);
-				temp = Mathf.Abs(90 - angle) / changeThreshold;
+				temp = Mathf.Abs(90 - angle) / morningChangeThreshold;
 				RenderSettings.fogColor = Color.Lerp (morningFogColor, dayFogColor, temp);
+				RenderSettings.fogStartDistance = Mathf.Lerp (morningFogStartDistance, dayFogStartDistance, temp);
+				RenderSettings.fogEndDistance = Mathf.Lerp (morningFogEndDistance, dayFogEndDistance, temp);
 			}
 			RenderSettings.skybox.SetFloat ("_Blend", temp);
 		}
 		// If it is during the transition from day to night
-		else if (angle >= 270 - changeThreshold && angle <= 270 + changeThreshold) {
+		else if (angle >= 270 - dayChangeThreshold && angle <= 270 + eveningChangeThreshold) {
 			// If it is a day-to-evening angle
 			if (angle < 270) {
 				// Blend between day and evening variables
 				SetSkyboxTextures (daySkyboxTextures, eveningSkyboxTextures);
-				temp = 1 - Mathf.Abs(270 - angle) / changeThreshold;
+				temp = 1 - Mathf.Abs(270 - angle) / dayChangeThreshold;
 				RenderSettings.fogColor = Color.Lerp (dayFogColor, eveningFogColor, temp);
+				RenderSettings.fogStartDistance = Mathf.Lerp (dayFogStartDistance, eveningFogStartDistance, temp);
+				RenderSettings.fogEndDistance = Mathf.Lerp (dayFogEndDistance, eveningFogEndDistance, temp);
 			}
 			// Otherwise it is an evening-to-night angle
 			else {
 				// Blend between evening and night variables
 				SetSkyboxTextures (eveningSkyboxTextures, nightSkyboxTextures);
-				temp = Mathf.Abs(270 - angle) / changeThreshold;
+				temp = Mathf.Abs(270 - angle) / eveningChangeThreshold;
 				RenderSettings.fogColor = Color.Lerp (eveningFogColor, nightFogColor, temp);
+				RenderSettings.fogStartDistance = Mathf.Lerp (eveningFogStartDistance, nightFogStartDistance, temp);
+				RenderSettings.fogEndDistance = Mathf.Lerp (eveningFogEndDistance, nightFogEndDistance, temp);
 			}
 			RenderSettings.skybox.SetFloat ("_Blend", temp);
 		}
@@ -184,10 +217,14 @@ public class GlobalClock : MonoBehaviour {
 			if (angle < 90 || angle > 270) {
 				RenderSettings.skybox.SetFloat ("_Blend", 0);
 				RenderSettings.fogColor = nightFogColor;
+				RenderSettings.fogStartDistance = nightFogStartDistance;
+				RenderSettings.fogEndDistance = nightFogEndDistance;
 			}
 			else {
 				RenderSettings.skybox.SetFloat ("_Blend", 1);
 				RenderSettings.fogColor = dayFogColor;
+				RenderSettings.fogStartDistance = dayFogStartDistance;
+				RenderSettings.fogEndDistance = dayFogEndDistance;
 			}
 		}
 	}
@@ -212,7 +249,7 @@ public class GlobalClock : MonoBehaviour {
 	void LightToggle () {
 		// TOGGLES ON/OFF THE SUN(S)/MOON(S) DURING NIGHTTIME/DAYLIGHT HOURS
 		// If it is daytime
-		if (angle > 90 && angle < 270) {
+		if (angle > 95 && angle < 265) {
 			// turn on sun lights
 			foreach (Transform sun in suns) {
 				Light light = sun.GetComponent<Light>();
